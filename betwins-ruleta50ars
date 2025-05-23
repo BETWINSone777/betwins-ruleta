@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BETWINS - Sorteo Diario</title>
+  <script src="https://cdn.jsdelivr.net/npm/winwheel@2.7.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-image: url('https://files.oaiusercontent.com/gen/images/0661d8a9-82bb-46cb-93b9-0b3f15e3655c/0.png');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white;
+      text-align: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5em;
+      color: #FFD700;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    #formulario, #ruleta-container {
+      margin-top: 30px;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: inline-block;
+      padding: 30px;
+      border-radius: 10px;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      width: 250px;
+      border-radius: 5px;
+      border: 1px solid #FFD700;
+      background-color: #111;
+      color: #fff;
+    }
+
+    button {
+      padding: 10px 25px;
+      font-size: 16px;
+      margin: 10px 5px;
+      cursor: pointer;
+      background-color: #FFD700;
+      color: black;
+      border: none;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #e6c200;
+    }
+
+    canvas {
+      margin-top: 20px;
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      background-color: #fff;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #ganador {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #00ffcc;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎰 Sorteo BETWINS Diario</h1>
+
+  <div id="formulario">
+    <input type="text" id="usuario" placeholder="Nombre de usuario">
+    <br>
+    <button onclick="agregarParticipante()">Inscribirme</button>
+  </div>
+
+  <div>
+    <button onclick="mostrarRuleta()">🎯 Ir a la ruleta</button>
+    <button onclick="exportarParticipantes()">📤 Exportar participantes</button>
+  </div>
+
+  <div id="ruleta-container" class="hidden">
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <br>
+    <button onclick="girarRuleta()">🎡 Girar</button>
+    <p id="ganador"></p>
+  </div>
+
+  <script>
+    const participantesKey = 'participantes_betwins';
+
+    function cargarParticipantes() {
+      return JSON.parse(localStorage.getItem(participantesKey)) || [];
+    }
+
+    function guardarParticipantes(participantes) {
+      localStorage.setItem(participantesKey, JSON.stringify(participantes));
+    }
+
+    function agregarParticipante() {
+      const usuarioInput = document.getElementById('usuario');
+      const usuario = usuarioInput.value.trim();
+
+      if (!usuario) {
+        alert('Por favor ingresa un nombre de usuario.');
+        return;
+      }
+
+      let participantes = cargarParticipantes();
+
+      if (participantes.includes(usuario.toLowerCase())) {
+        alert('Este nombre de usuario ya está registrado.');
+        return;
+      }
+
+      participantes.push(usuario.toLowerCase());
+      guardarParticipantes(participantes);
+      alert('¡Inscripción exitosa!');
+      usuarioInput.value = '';
+    }
+
+    let ruleta;
+
+    function mostrarRuleta() {
+      document.getElementById('formulario').classList.add('hidden');
+      document.getElementById('ruleta-container').classList.remove('hidden');
+      const participantes = cargarParticipantes();
+
+      if (participantes.length === 0) {
+        alert('No hay participantes');
+        return;
+      }
+
+      ruleta = new Winwheel({
+        numSegments: participantes.length,
+        segments: participantes.map(nombre => ({
+          fillStyle: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
+          text: nombre
+        })),
+        animation: {
+          type: 'spinToStop',
+          duration: 5,
+          spins: 8,
+          callbackFinished: alertGanador
+        }
+      });
+    }
+
+    function girarRuleta() {
+      if (ruleta) ruleta.startAnimation();
+    }
+
+    function alertGanador(segmento) {
+      document.getElementById('ganador').textContent = `🎉 Ganador: ${segmento.text}`;
+    }
+
+    function exportarParticipantes() {
+      const participantes = cargarParticipantes();
+      if (participantes.length === 0) {
+        alert('No hay participantes para exportar.');
+        return;
+      }
+
+      const contenido = 'Nombre de usuario\n' + participantes.join('\n');
+      const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'participantes.csv');
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
